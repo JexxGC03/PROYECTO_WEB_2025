@@ -1,2 +1,12 @@
 # Node
 **/node_modules/
+
+
+
+# Archivos de entorno (no versionar)
+.env
+.env.*
+*.env
+**/.env
+**/.env.*
+**/*.env
