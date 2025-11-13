@@ -1,0 +1,100 @@
+@baseUrl = http://localhost:4000
+@accessToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2OTE2NTM2NTk1NWFkYzJkNGE4YWI0YzciLCJyb2xlIjoiQURNSU4iLCJpYXQiOjE3NjMwNzMzMDksImV4cCI6MTc2MzA3NDIwOX0.FrKWDCFfT-zBs4dxS05lF3_xXETE_ijbleSvC_sw9Rk
+@caseId = 69165d3d955adc2d4a8ab4cf
+
+### -------------------------
+### AUTH: register (usar un email único la primera vez)
+### -------------------------
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{
+  "fullName": "Admin Root",
+  "email": "admin@example.com",
+  "password": "AdminPass!2025"
+}
+
+### -------------------------
+### AUTH: login (ajusta el email a uno existente)
+### Guarda accessToken como variable global
+### -------------------------
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@example.com",
+  "password": "AdminPass!2025"
+}
+
+### -------------------------
+### AUTH: me (requiere token)
+### -------------------------
+GET {{baseUrl}}/api/auth/me
+Authorization: Bearer {{accessToken}}
+
+### -------------------------
+### CASES: crear (AGENT/ADMIN)
+### Guarda caseId global
+### -------------------------
+POST {{baseUrl}}/api/cases
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "plaintiffName": "Juan Pérez",
+  "defendantName": "ACME S.A.",
+  "client": "cliente-{{$timestamp}}@mail.com",
+  "caseType": "CIVIL",
+  "caseNumber": "PROC-{{$timestamp}}",
+  "priority": "MEDIUM",
+  "description": "Caso de prueba creado desde requests.http"
+}
+
+### -------------------------
+### CASES: listar (filtros opcionales)
+### -------------------------
+GET {{baseUrl}}/api/cases?status=OPEN&q=ACME
+Authorization: Bearer {{accessToken}}
+
+### -------------------------
+### CASES: obtener por id
+### -------------------------
+GET {{baseUrl}}/api/cases/{{caseId}}
+Authorization: Bearer {{accessToken}}
+
+### -------------------------
+### CASES: actualizar parcialmente
+### -------------------------
+PATCH {{baseUrl}}/api/cases/{{caseId}}
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "priority": "HIGH",
+  "status": "IN_PROGRESS",
+  "description": "Actualizado desde REST Client"
+}
+
+### -------------------------
+### COMMENTS: agregar comentario
+### -------------------------
+POST {{baseUrl}}/api/comments
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "caseId": "{{caseId}}",
+  "body": "Comentario de prueba {{$timestamp}}"
+}
+
+### -------------------------
+### COMMENTS: listar por caseId
+### -------------------------
+GET {{baseUrl}}/api/comments/{{caseId}}
+Authorization: Bearer {{accessToken}}
+
+### -------------------------
+### CASES: eliminar (ADMIN)
+### -------------------------
+DELETE {{baseUrl}}/api/cases/{{caseId}}
+Authorization: Bearer {{accessToken}}
