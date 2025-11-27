@@ -5,6 +5,7 @@ import { Card, CardContent } from '../components/ui/card';
 import { Scale, FileText, Users, Award, Shield, Star, Quote } from 'lucide-react';
 import { ImageWithFallback } from '../components/figma/ImageWithFallback';
 import { Page } from '../App';
+import { assets } from '../assets';
 
 interface InicioProps {
   onNavigate: (page: Page) => void;
@@ -20,8 +21,8 @@ export function Inicio({ onNavigate, isLoggedIn }: InicioProps) {
       <section className="relative bg-[#6D0111] text-white py-20 overflow-hidden">
         <div className="absolute inset-0 opacity-10">
           <ImageWithFallback
-            src="https://images.unsplash.com/photo-1759038085950-1234ca8f5fed?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwcm9mZXNzaW9uYWwlMjBsYXd5ZXJzJTIwb2ZmaWNlfGVufDF8fHx8MTc2Mjg5NTk4Nnww&ixlib=rb-4.1.0&q=80&w=1080"
-            alt="Law Office"
+            src={assets.heroLawOffice}
+            alt="Oficina Legal"
             className="w-full h-full object-cover"
           />
         </div>
@@ -130,8 +131,8 @@ export function Inicio({ onNavigate, isLoggedIn }: InicioProps) {
             <div className="relative">
               <div className="bg-gray-200 rounded-lg overflow-hidden aspect-[4/3]">
                 <ImageWithFallback
-                  src="https://images.unsplash.com/photo-1635845080335-dcfe06a0fcf1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxsYXclMjBvZmZpY2UlMjBpbnRlcmlvcnxlbnwxfHx8fDE3NjI4ODc2MTl8MA&ixlib=rb-4.1.0&q=80&w=1080"
-                  alt="Law office interior"
+                  src={assets.officeInterior}
+                  alt="Interior de oficina legal"
                   className="w-full h-full object-cover"
                 />
               </div>
@@ -252,26 +253,30 @@ export function Inicio({ onNavigate, isLoggedIn }: InicioProps) {
 
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-8">
             {[
-              { name: 'Seguros Bolívar', logo: 'SB' },
-              { name: 'Sura', logo: 'SURA' },
-              { name: 'Liberty Seguros', logo: 'LS' },
-              { name: 'Allianz', logo: 'AZ' },
-              { name: 'Mapfre', logo: 'MP' },
-              { name: 'Positiva', logo: 'PS' },
-              { name: 'AXA Colpatria', logo: 'AXA' },
-              { name: 'HDI Seguros', logo: 'HDI' },
-              { name: 'Equidad Seguros', logo: 'EQ' },
-              { name: 'Estado Seguros', logo: 'ES' },
-              { name: 'Solidaria', logo: 'SL' },
-              { name: 'Mundial', logo: 'MU' }
+              { name: 'Seguros Bolívar', image: assets.logoBolivar },
+              { name: 'Sura', image: assets.logoSura },
+              { name: 'Liberty Seguros', image: assets.logoLiberty },
+              { name: 'Allianz', image: assets.logoAllianz },
+              { name: 'Mapfre', image: assets.logoMapfre },
+              { name: 'Positiva', image: assets.logoPositiva },
+              { name: 'AXA Colpatria', image: assets.logoAxa },
+              { name: 'HDI Seguros', image: assets.logoHdi },
+              { name: 'Equidad Seguros', image: assets.logoEquidad },
+              { name: 'Estado Seguros', image: assets.logoEstado },
+              { name: 'Solidaria', image: assets.logoSolidaria },
+              { name: 'Mundial', image: assets.logoMundial }
             ].map((cliente, index) => (
               <Card 
                 key={index} 
                 className="hover:shadow-lg transition-shadow group cursor-pointer"
               >
-                <CardContent className="p-6 flex flex-col items-center justify-center aspect-square">
-                  <div className="bg-[#6D0111] text-white w-20 h-20 rounded-lg flex items-center justify-center mb-3 group-hover:bg-[#5A0010] transition-colors">
-                    <span className="text-xl">{cliente.logo}</span>
+                <CardContent className="p-6 flex flex-col items-center justify-center aspect-square bg-gray-50 group-hover:bg-[#f5f5f5]">
+                  <div className="w-full h-16 flex items-center justify-center mb-3 overflow-hidden">
+                    <ImageWithFallback
+                      src={cliente.image}
+                      alt={cliente.name}
+                      className="max-h-full max-w-full object-contain"
+                    />
                   </div>
                   <p className="text-xs text-center text-gray-600">{cliente.name}</p>
                 </CardContent>

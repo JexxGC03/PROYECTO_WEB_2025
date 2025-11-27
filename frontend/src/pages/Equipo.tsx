@@ -5,6 +5,7 @@ import { Card, CardContent } from '../components/ui/card';
 import { Mail, Phone, Linkedin } from 'lucide-react';
 import { ImageWithFallback } from '../components/figma/ImageWithFallback';
 import { Page } from '../App';
+import { assets } from '../assets';
 
 interface EquipoProps {
   onNavigate: (page: Page) => void;
@@ -18,7 +19,7 @@ export function Equipo({ onNavigate, isLoggedIn, onLogout }: EquipoProps) {
       name: 'Dr. Juan Carlos Rincón',
       role: 'Socio Fundador',
       specialty: 'Derecho de Seguros y Derecho Médico',
-      image: 'https://images.unsplash.com/photo-1658249682516-c7789d418978?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwcm9mZXNzaW9uYWwlMjBtYW4lMjBsYXd5ZXJ8ZW58MXx8fHwxNzYyOTAzOTU4fDA&ixlib=rb-4.1.0&q=80&w=1080',
+      image: assets.lawyerMan1,
       description: 'Más de 25 años de experiencia en derecho de seguros. Especialista en reclamaciones complejas y litigios contra aseguradoras.',
       education: [
         'Abogado - Universidad Nacional de Colombia',
@@ -32,7 +33,7 @@ export function Equipo({ onNavigate, isLoggedIn, onLogout }: EquipoProps) {
       name: 'Dra. María Fernanda Achury',
       role: 'Socia Fundadora',
       specialty: 'Derecho Penal y Derecho Laboral',
-      image: 'https://images.unsplash.com/photo-1736939678218-bd648b5ef3bb?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwcm9mZXNzaW9uYWwlMjB3b21hbiUyMGxhd3llcnxlbnwxfHx8fDE3NjI4ODQ4NDZ8MA&ixlib=rb-4.1.0&q=80&w=1080',
+      image: assets.lawyerWoman1,
       description: 'Reconocida penalista con amplia trayectoria en defensa penal y derecho laboral. Especialista en casos de alta complejidad.',
       education: [
         'Abogada - Universidad del Rosario',
@@ -46,7 +47,7 @@ export function Equipo({ onNavigate, isLoggedIn, onLogout }: EquipoProps) {
       name: 'Dr. Carlos Andrés Ramírez',
       role: 'Socio Senior',
       specialty: 'Derecho Comercial y Corporativo',
-      image: 'https://images.unsplash.com/photo-1658249682516-c7789d418978?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwcm9mZXNzaW9uYWwlMjBtYW4lMjBsYXd5ZXJ8ZW58MXx8fHwxNzYyOTAzOTU4fDA&ixlib=rb-4.1.0&q=80&w=1080',
+      image: assets.lawyerMan1,
       description: 'Experto en derecho empresarial, fusiones y adquisiciones. Asesor de importantes compañías nacionales e internacionales.',
       education: [
         'Abogado - Universidad de los Andes',
@@ -60,7 +61,7 @@ export function Equipo({ onNavigate, isLoggedIn, onLogout }: EquipoProps) {
       name: 'Dra. Ana María López',
       role: 'Asociada Senior',
       specialty: 'Derecho Civil y de Familia',
-      image: 'https://images.unsplash.com/photo-1736939678218-bd648b5ef3bb?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwcm9mZXNzaW9uYWwlMjB3b21hbiUyMGxhd3llcnxlbnwxfHx8fDE3NjI4ODQ4NDZ8MA&ixlib=rb-4.1.0&q=80&w=1080',
+      image: assets.lawyerWoman1,
       description: 'Especialista en derecho de familia, sucesiones y procesos civiles. Enfoque empático y soluciones efectivas.',
       education: [
         'Abogada - Universidad Javeriana',
@@ -74,7 +75,7 @@ export function Equipo({ onNavigate, isLoggedIn, onLogout }: EquipoProps) {
       name: 'Dr. Jorge Esteban Vargas',
       role: 'Asociado',
       specialty: 'Derecho Administrativo',
-      image: 'https://images.unsplash.com/photo-1658249682516-c7789d418978?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwcm9mZXNzaW9uYWwlMjBtYW4lMjBsYXd5ZXJ8ZW58MXx8fHwxNzYyOTAzOTU4fDA&ixlib=rb-4.1.0&q=80&w=1080',
+      image: assets.lawyerMan1,
       description: 'Experto en contratación estatal y procesos administrativos. Asesor en licitaciones públicas y relaciones con el Estado.',
       education: [
         'Abogado - Universidad Nacional de Colombia',
@@ -88,7 +89,7 @@ export function Equipo({ onNavigate, isLoggedIn, onLogout }: EquipoProps) {
       name: 'Dra. Laura Patricia Moreno',
       role: 'Asociada',
       specialty: 'Derecho Ambiental y Sostenibilidad',
-      image: 'https://images.unsplash.com/photo-1736939678218-bd648b5ef3bb?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwcm9mZXNzaW9uYWwlMjB3b21hbiUyMGxhd3llcnxlbnwxfHx8fDE3NjI4ODQ4NDZ8MA&ixlib=rb-4.1.0&q=80&w=1080',
+      image: assets.lawyerWoman1,
       description: 'Especialista en derecho ambiental y compliance. Asesora empresas en temas de sostenibilidad y cumplimiento normativo.',
       education: [
         'Abogada - Universidad de los Andes',
@@ -113,8 +114,8 @@ export function Equipo({ onNavigate, isLoggedIn, onLogout }: EquipoProps) {
       <section className="relative bg-[#6D0111] text-white py-20">
         <div className="absolute inset-0 opacity-10">
           <ImageWithFallback
-            src="https://images.unsplash.com/photo-1758519288417-d359ac3c494d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxsZWdhbCUyMHRlYW0lMjBtZWV0aW5nfGVufDF8fHx8MTc2MjgxMTIwNnww&ixlib=rb-4.1.0&q=80&w=1080"
-            alt="Legal team"
+            src={assets.lawyerTeam}
+            alt="Equipo Legal"
             className="w-full h-full object-cover"
           />
         </div>

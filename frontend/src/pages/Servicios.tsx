@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { ImageWithFallback } from '../components/figma/ImageWithFallback';
 import { Page } from '../App';
+import { assets } from '../assets';
 
 interface ServiciosProps {
   onNavigate: (page: Page) => void;
@@ -104,8 +105,8 @@ export function Servicios({ onNavigate, isLoggedIn, onLogout }: ServiciosProps) 
       <section className="relative bg-[#6D0111] text-white py-20">
         <div className="absolute inset-0 opacity-10">
           <ImageWithFallback
-            src="https://images.unsplash.com/photo-1758519288417-d359ac3c494d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxsZWdhbCUyMHRlYW0lMjBtZWV0aW5nfGVufDF8fHx8MTc2MjgxMTIwNnww&ixlib=rb-4.1.0&q=80&w=1080"
-            alt="Legal team"
+            src={assets.servicesTeam}
+            alt="Equipo de Servicios"
             className="w-full h-full object-cover"
           />
         </div>

@@ -1,6 +1,7 @@
-import { Scale } from 'lucide-react';
 import { Button } from './ui/button';
 import { Page } from '../App';
+import { ImageWithFallback } from './figma/ImageWithFallback';
+import { assets } from '../assets';
 
 interface HeaderProps {
   onNavigate: (page: Page) => void;
@@ -24,8 +25,12 @@ export function Header({ onNavigate, currentPage = 'inicio', isLoggedIn, onLogou
           className="flex items-center gap-3 cursor-pointer"
           onClick={() => onNavigate('inicio')}
         >
-          <div className="bg-white text-[#6D0111] p-2 rounded">
-            <Scale className="h-6 w-6" />
+          <div className="bg-white text-[#6D0111] p-1 rounded-full h-10 w-10 flex items-center justify-center overflow-hidden">
+            <ImageWithFallback
+              src={assets.logo}
+              alt="Logo Rincón Achury"
+              className="h-full w-full object-contain"
+            />
           </div>
           <div>
             <h1 className="text-lg">Rincón Achury</h1>
