@@ -1,0 +1,103 @@
+@baseUrl = http://localhost:4000
+@adminToken = 
+@clientToken = 
+@adminBootstrapToken = {{adminToken}}
+@adminEmail = admin.demo@mail.com
+@adminPassword = AdminDemo!2025
+@clientEmail = cliente.demo@mail.com
+@clientPassword = ClienteDemo!2025
+@caseNumberOne = PROC-{{$timestamp}}-A
+@caseNumberTwo = PROC-{{$timestamp}}-B
+
+### 1) Inicia sesión con un ADMIN existente y pega su accessToken aquí
+# @adminBootstrapToken se usa para crear los usuarios demo
+# Reemplaza manualmente adminBootstrapToken tras ejecutar este login si no hay uno cargado
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+> {% client.global.set("adminBootstrapToken", response.body.accessToken); %}
+
+{
+  "email": "admin@example.com",
+  "password": "AdminPass!2025"
+}
+
+### 2) Crea un ADMIN de demo (requiere adminBootstrapToken ya seteado)
+POST {{baseUrl}}/api/users
+Authorization: Bearer {{adminBootstrapToken}}
+Content-Type: application/json
+
+{
+  "fullName": "Admin Demo",
+  "email": "{{adminEmail}}",
+  "password": "{{adminPassword}}",
+  "role": "ADMIN"
+}
+
+### 3) Crea un CLIENTE de demo (requiere adminBootstrapToken)
+POST {{baseUrl}}/api/users
+Authorization: Bearer {{adminBootstrapToken}}
+Content-Type: application/json
+
+{
+  "fullName": "Cliente Demo",
+  "email": "{{clientEmail}}",
+  "password": "{{clientPassword}}",
+  "role": "CLIENT"
+}
+
+### 4) Login como ADMIN demo y guarda el accessToken en adminToken
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+> {% client.global.set("adminToken", response.body.accessToken); %}
+
+{
+  "email": "{{adminEmail}}",
+  "password": "{{adminPassword}}"
+}
+
+### 5) Login como CLIENTE demo y guarda accessToken en clientToken
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+> {% client.global.set("clientToken", response.body.accessToken); %}
+
+{
+  "email": "{{clientEmail}}",
+  "password": "{{clientPassword}}"
+}
+
+### 6) Crear el Caso 1 asociado al cliente (requiere adminToken)
+POST {{baseUrl}}/api/cases
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "plaintiffName": "Cliente Demo",
+  "defendantName": "Aseguradora Alfa",
+  "client": "{{clientEmail}}",
+  "caseType": "CIVIL",
+  "caseNumber": "{{caseNumberOne}}",
+  "priority": "MEDIUM",
+  "description": "Reclamación inicial por póliza de vida"
+}
+
+### 7) Crear el Caso 2 asociado al cliente (requiere adminToken)
+POST {{baseUrl}}/api/cases
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "plaintiffName": "Cliente Demo",
+  "defendantName": "Empresa Beta",
+  "client": "{{clientEmail}}",
+  "caseType": "LABORAL",
+  "caseNumber": "{{caseNumberTwo}}",
+  "priority": "HIGH",
+  "description": "Reintegro laboral con medidas cautelares"
+}
+
+### 8) Listar casos como CLIENTE para validar que se ven los dos
+GET {{baseUrl}}/api/cases?q={{clientEmail}}
+Authorization: Bearer {{clientToken}}
