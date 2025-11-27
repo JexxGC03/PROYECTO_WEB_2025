@@ -1,21 +1,8 @@
-// src/controllers/cases.controller.ts
 import { Request, Response } from "express";
 import Case from "../models/Case";
-import User from "../models/User";
 import { AuthRequest } from "../middlewares/auth";
-
-// --------- helpers ----------
-const looksEmail = (s?: string) => !!s && /\S+@\S+\.\S+/.test(s);
-
-async function resolveClientValue(input?: string) {
-  if (!input) return {};
-  if (looksEmail(input)) {
-    const u = await User.findOne({ email: input });
-    if (u) return { ref: u._id };
-    return { email: input };
-  }
-  return { name: input };
-}
+import { resolveClientValue } from "../utils/client";
+import { recordAudit } from "../utils/audit";
 
 function buildFilter(qs: Request["query"]) {
   const { q, status, caseType, priority, assignedTo, createdBy, caseNumber } = qs as any;
@@ -30,13 +17,19 @@ function buildFilter(qs: Request["query"]) {
   return filter;
 }
 
-// --------- CREATE (por si no lo tenías aquí) ----------
 export const createCase = async (req: AuthRequest, res: Response) => {
   const {
     plaintiffName, defendantName, client, caseType, caseNumber, priority, description
-  } = req.body;
+  } = req.body as {
+    plaintiffName: string;
+    defendantName: string;
+    client?: string;
+    caseType: string;
+    caseNumber: string;
+    priority?: string;
+    description?: string;
+  };
 
-  // caseNumber único
   const dup = await Case.findOne({ caseNumber });
   if (dup) return res.status(409).json({ message: "caseNumber ya existe" });
 
@@ -53,17 +46,17 @@ export const createCase = async (req: AuthRequest, res: Response) => {
     createdBy: req.user!.sub
   });
 
+  await recordAudit({ userId: req.user?.sub, action: "CREATE", entity: "Case", entityId: String(doc._id) });
   res.status(201).json(doc);
 };
 
-// --------- LIST ----------
 export const listCases = async (req: AuthRequest, res: Response) => {
   const page = Math.max(parseInt(String(req.query.page ?? "1"), 10), 1);
   const pageSize = Math.min(
     Math.max(parseInt(String(req.query.pageSize ?? "10"), 10), 1),
     100
   );
-  const sort = String(req.query.sort ?? "-createdAt"); // ej: "createdAt" o "-createdAt"
+  const sort = String(req.query.sort ?? "-createdAt");
 
   const filter = buildFilter(req.query);
 
@@ -86,7 +79,6 @@ export const listCases = async (req: AuthRequest, res: Response) => {
   });
 };
 
-// --------- GET BY ID ----------
 export const getCase = async (req: AuthRequest, res: Response) => {
   const doc = await Case.findById(req.params.id)
     .populate("assignedTo", "fullName email")
@@ -96,7 +88,6 @@ export const getCase = async (req: AuthRequest, res: Response) => {
   res.json(doc);
 };
 
-// --------- UPDATE ----------
 export const updateCase = async (req: AuthRequest, res: Response) => {
   const id = req.params.id;
   const body = req.body as {
@@ -111,7 +102,6 @@ export const updateCase = async (req: AuthRequest, res: Response) => {
     assignedTo?: string;
   };
 
-  // validar uniqueness de caseNumber si viene
   if (body.caseNumber) {
     const dup = await Case.findOne({ caseNumber: body.caseNumber, _id: { $ne: id } });
     if (dup) return res.status(409).json({ message: "caseNumber ya existe" });
@@ -123,7 +113,6 @@ export const updateCase = async (req: AuthRequest, res: Response) => {
 
   if (typeof body.client === "string") {
     const clientObj = await resolveClientValue(body.client);
-    // reescribe todo el subdocumento client
     patch["client"] = clientObj;
   }
   if (body.caseType) patch.caseType = body.caseType;
@@ -135,12 +124,13 @@ export const updateCase = async (req: AuthRequest, res: Response) => {
 
   const doc = await Case.findByIdAndUpdate(id, patch, { new: true });
   if (!doc) return res.status(404).json({ message: "No encontrado" });
+  await recordAudit({ userId: req.user?.sub, action: "UPDATE", entity: "Case", entityId: id, metadata: patch });
   res.json(doc);
 };
 
-// --------- DELETE ----------
 export const deleteCase = async (req: AuthRequest, res: Response) => {
   const doc = await Case.findByIdAndDelete(req.params.id);
   if (!doc) return res.status(404).json({ message: "No encontrado" });
+  await recordAudit({ userId: req.user?.sub, action: "DELETE", entity: "Case", entityId: req.params.id });
   res.status(204).send();
 };

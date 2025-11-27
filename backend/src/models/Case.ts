@@ -25,10 +25,10 @@ const caseSchema = new Schema({
   // operativos
   status:     { type: String, enum: ["OPEN","IN_PROGRESS","RESOLVED","CLOSED"], default: "OPEN", index: true },
   assignedTo: { type: Types.ObjectId, ref: "User" },        // abogado/gestor
-  createdBy:  { type: Types.ObjectId, ref: "User", required: true } // quien crea
+  createdBy:  { type: Types.ObjectId, ref: "User", required: true }, // quien crea
 
   // opcional: title derivado
-  ,title:     { type: String, default: "" }
+  title:     { type: String, default: "" }
 }, { timestamps: true });
 
 // índices para búsqueda rápida
