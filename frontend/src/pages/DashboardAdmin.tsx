@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
@@ -29,11 +29,13 @@ import {
   CheckSquare
 } from 'lucide-react';
 import { Page } from '../App';
+import { ApiCase, apiCreateCase, apiListCases, apiUpdateCase } from '../lib/api';
 
 interface DashboardAdminProps {
   onNavigate: (page: Page) => void;
   onLogout: () => void;
   userEmail: string;
+  accessToken: string;
 }
 
 interface Caso {
@@ -60,124 +62,53 @@ interface Actuacion {
   agregadoPor: string;
 }
 
-export function DashboardAdmin({ onNavigate, onLogout, userEmail }: DashboardAdminProps) {
-  const [casos, setCasos] = useState<Caso[]>([
-    {
-      id: '1',
-      numero: 'CASO-2025-001',
-      demandante: 'María González Pérez',
-      demandado: 'Empresa Tech Solutions SAS',
-      cliente: 'María González Pérez',
-      tipo: 'Derecho Laboral',
-      numeroProceso: 'PROC-2025-001',
-      estado: 'ACTIVO',
-      prioridad: 'alta',
-      fecha: '2025-01-15',
-      descripcion: 'Despido injustificado - Requiere audiencia',
-      ultimaActuacion: 'Presentación de demanda',
-      fechaUltimaActuacion: '2025-01-16',
-      actuaciones: [
-        {
-          id: '1',
-          fecha: '2025-01-16',
-          descripcion: 'Presentación de demanda',
-          agregadoPor: 'María González Pérez'
-        }
-      ]
-    },
-    {
-      id: '2',
-      numero: 'CASO-2025-002',
-      demandante: 'Carlos Rodríguez',
-      demandado: 'Banco Nacional',
-      cliente: 'Carlos Rodríguez',
-      tipo: 'Derecho Penal Derivado de Pólizas',
-      numeroProceso: 'PROC-2025-002',
-      estado: 'PENDIENTE',
-      prioridad: 'media',
-      fecha: '2025-02-01',
-      descripcion: 'Proceso por presunta estafa en seguros - Pendiente de documentación',
-      ultimaActuacion: 'Recepción de documentación',
-      fechaUltimaActuacion: '2025-02-02',
-      actuaciones: [
-        {
-          id: '2',
-          fecha: '2025-02-02',
-          descripcion: 'Recepción de documentación',
-          agregadoPor: 'Carlos Rodríguez'
-        }
-      ]
-    },
-    {
-      id: '3',
-      numero: 'CASO-2025-003',
-      demandante: 'Ana Martínez López',
-      demandado: 'José Pérez',
-      cliente: 'Ana Martínez López',
-      tipo: 'Derecho Civil',
-      numeroProceso: 'PROC-2025-003',
-      estado: 'ACTIVO',
-      prioridad: 'baja',
-      fecha: '2025-01-20',
-      descripcion: 'Divorcio contencioso - Acuerdo de custodia',
-      ultimaActuacion: 'Reunión de conciliación',
-      fechaUltimaActuacion: '2025-01-21',
-      actuaciones: [
-        {
-          id: '3',
-          fecha: '2025-01-21',
-          descripcion: 'Reunión de conciliación',
-          agregadoPor: 'Ana Martínez López'
-        }
-      ]
-    },
-    {
-      id: '4',
-      numero: 'CASO-2024-156',
-      demandante: 'Empresa Tech Solutions SAS',
-      demandado: 'Ministerio de Transporte',
-      cliente: 'Empresa Tech Solutions SAS',
-      tipo: 'Derecho Administrativo',
-      numeroProceso: 'PROC-2024-156',
-      estado: 'CERRADO',
-      prioridad: 'alta',
-      fecha: '2024-12-10',
-      descripcion: 'Disputa contractual - Caso resuelto favorablemente',
-      ultimaActuacion: 'Firma de acuerdo',
-      fechaUltimaActuacion: '2024-12-11',
-      actuaciones: [
-        {
-          id: '4',
-          fecha: '2024-12-11',
-          descripcion: 'Firma de acuerdo',
-          agregadoPor: 'Empresa Tech Solutions SAS'
-        }
-      ]
-    },
-    {
-      id: '5',
-      numero: 'CASO-2025-004',
-      demandante: 'client@email.com',
-      demandado: 'Seguros Vida',
-      cliente: 'client@email.com',
-      tipo: 'Derecho de Seguros',
-      numeroProceso: 'PROC-2025-004',
-      estado: 'ACTIVO',
-      prioridad: 'alta',
-      fecha: '2025-02-05',
-      descripcion: 'Reclamación de seguro médico - En proceso',
-      ultimaActuacion: 'Presentación de reclamación',
-      fechaUltimaActuacion: '2025-02-06',
-      actuaciones: [
-        {
-          id: '5',
-          fecha: '2025-02-06',
-          descripcion: 'Presentación de reclamación',
-          agregadoPor: 'client@email.com'
-        }
-      ]
-    }
-  ]);
+const statusApiToUi: Record<ApiCase['status'], Caso['estado']> = {
+  OPEN: 'PENDIENTE',
+  IN_PROGRESS: 'ACTIVO',
+  RESOLVED: 'PENDIENTE',
+  CLOSED: 'CERRADO'
+};
+
+const statusUiToApi: Record<Caso['estado'], ApiCase['status']> = {
+  ACTIVO: 'IN_PROGRESS',
+  PENDIENTE: 'OPEN',
+  CERRADO: 'CLOSED'
+};
+
+const priorityApiToUi: Record<ApiCase['priority'], Caso['prioridad']> = {
+  LOW: 'baja',
+  MEDIUM: 'media',
+  HIGH: 'alta',
+  URGENT: 'alta'
+};
+
+const priorityUiToApi: Record<Caso['prioridad'], ApiCase['priority']> = {
+  baja: 'LOW',
+  media: 'MEDIUM',
+  alta: 'HIGH'
+};
+
+const mapApiCaseToUi = (apiCase: ApiCase): Caso => ({
+  id: apiCase._id,
+  numero: apiCase.caseNumber,
+  demandante: apiCase.plaintiff?.name ?? '',
+  demandado: apiCase.defendant?.name ?? '',
+  cliente: apiCase.client?.name || apiCase.client?.email || 'Sin cliente',
+  tipo: apiCase.caseType,
+  numeroProceso: apiCase.caseNumber,
+  estado: statusApiToUi[apiCase.status] ?? 'PENDIENTE',
+  prioridad: priorityApiToUi[apiCase.priority] ?? 'media',
+  fecha: apiCase.createdAt || new Date().toISOString(),
+  descripcion: apiCase.description || '',
+  ultimaActuacion: undefined,
+  fechaUltimaActuacion: undefined,
+  actuaciones: [],
+});
+
+export function DashboardAdmin({ onNavigate, onLogout, userEmail, accessToken }: DashboardAdminProps) {
+  const [casos, setCasos] = useState<Caso[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [filterEstado, setFilterEstado] = useState<string>('todos');
@@ -194,11 +125,28 @@ export function DashboardAdmin({ onNavigate, onLogout, userEmail }: DashboardAdm
     demandante: '',
     demandado: '',
     cliente: '',
-    tipo: '',
+    tipo: 'CIVIL',
     numeroProceso: '',
     prioridad: 'media' as 'alta' | 'media' | 'baja',
     descripcion: ''
   });
+
+  useEffect(() => {
+    const fetchCases = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        const res = await apiListCases(accessToken);
+        setCasos(res.data.map(mapApiCaseToUi));
+      } catch (err) {
+        setError((err as Error).message || 'No se pudieron cargar los casos');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchCases();
+  }, [accessToken]);
 
   const estadoColors = {
     'ACTIVO': 'bg-green-500',
@@ -213,44 +161,43 @@ export function DashboardAdmin({ onNavigate, onLogout, userEmail }: DashboardAdm
   };
 
   const tiposProceso = [
-    'Derecho Civil',
-    'Derecho de Seguros',
-    'Derecho Laboral',
-    'Derecho Médico',
-    'Derecho Administrativo',
-    'Derecho Penal Derivado de Pólizas'
+    { value: 'CIVIL', label: 'Derecho Civil' },
+    { value: 'PENAL', label: 'Derecho Penal' },
+    { value: 'LABORAL', label: 'Derecho Laboral' },
+    { value: 'FAMILIA', label: 'Derecho de Familia' },
+    { value: 'ADMINISTRATIVO', label: 'Derecho Administrativo' },
+    { value: 'OTRO', label: 'Otro' },
   ];
 
-  const filteredCasos = casos.filter(caso => {
+  const filteredCasos = useMemo(() => casos.filter(caso => {
     const matchesSearch = caso.cliente.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          caso.numero.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          caso.tipo.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesEstado = filterEstado === 'todos' || caso.estado === filterEstado.toUpperCase();
+    const matchesEstado = filterEstado === 'todos' || caso.estado === filterEstado;
     const matchesTipo = filterTipo === 'todos' || caso.tipo === filterTipo;
     return matchesSearch && matchesEstado && matchesTipo;
-  });
+  }), [casos, searchTerm, filterEstado, filterTipo]);
 
-  const handleCreateCaso = (e: React.FormEvent) => {
+  const handleCreateCaso = async (e: React.FormEvent) => {
     e.preventDefault();
-    const nuevoCaso: Caso = {
-      id: String(casos.length + 1),
-      numero: `CASO-2025-${String(casos.length + 1).padStart(3, '0')}`,
-      demandante: newCaso.demandante,
-      demandado: newCaso.demandado,
-      cliente: newCaso.cliente,
-      tipo: newCaso.tipo,
-      numeroProceso: newCaso.numeroProceso || `PROC-2025-${String(casos.length + 1).padStart(3, '0')}`,
-      estado: 'ACTIVO',
-      prioridad: newCaso.prioridad,
-      fecha: new Date().toISOString().split('T')[0],
-      descripcion: newCaso.descripcion,
-      ultimaActuacion: '',
-      fechaUltimaActuacion: '',
-      actuaciones: []
-    };
-    setCasos([...casos, nuevoCaso]);
-    setNewCaso({ demandante: '', demandado: '', cliente: '', tipo: '', numeroProceso: '', prioridad: 'media', descripcion: '' });
-    setIsDialogOpen(false);
+    try {
+      setError(null);
+      const created = await apiCreateCase({
+        plaintiffName: newCaso.demandante,
+        defendantName: newCaso.demandado,
+        client: newCaso.cliente,
+        caseType: newCaso.tipo,
+        caseNumber: newCaso.numeroProceso || `PROC-${Date.now()}`,
+        priority: priorityUiToApi[newCaso.prioridad],
+        description: newCaso.descripcion,
+      }, accessToken);
+
+      setCasos([mapApiCaseToUi(created), ...casos]);
+      setNewCaso({ demandante: '', demandado: '', cliente: '', tipo: 'CIVIL', numeroProceso: '', prioridad: 'media', descripcion: '' });
+      setIsDialogOpen(false);
+    } catch (err) {
+      setError((err as Error).message || 'No se pudo crear el caso');
+    }
   };
 
   const handleViewCaso = (caso: Caso) => {
@@ -258,14 +205,36 @@ export function DashboardAdmin({ onNavigate, onLogout, userEmail }: DashboardAdm
     setIsViewDialogOpen(true);
   };
 
-  const handleUpdateCaso = (casoActualizado: Caso) => {
+  const handleUpdateCaso = async (casoActualizado: Caso) => {
     setCasos(casos.map(c => c.id === casoActualizado.id ? casoActualizado : c));
     setSelectedCaso(casoActualizado);
+    try {
+      await apiUpdateCase(casoActualizado.id, {
+        plaintiffName: casoActualizado.demandante,
+        defendantName: casoActualizado.demandado,
+        client: casoActualizado.cliente,
+        caseType: casoActualizado.tipo,
+        caseNumber: casoActualizado.numeroProceso,
+        priority: priorityUiToApi[casoActualizado.prioridad],
+        status: statusUiToApi[casoActualizado.estado],
+        description: casoActualizado.descripcion,
+      }, accessToken);
+    } catch (err) {
+      setError((err as Error).message || 'No se pudo actualizar el caso');
+    }
   };
 
   const casosActivos = casos.filter(c => c.estado === 'ACTIVO').length;
   const casosPendientes = casos.filter(c => c.estado === 'PENDIENTE').length;
   const casosAltaPrioridad = casos.filter(c => c.prioridad === 'alta' && c.estado !== 'CERRADO').length;
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <p className="text-gray-600">Cargando casos desde el servidor...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
@@ -386,7 +355,7 @@ export function DashboardAdmin({ onNavigate, onLogout, userEmail }: DashboardAdm
                           </SelectTrigger>
                           <SelectContent>
                             {tiposProceso.map((tipo) => (
-                              <SelectItem key={tipo} value={tipo}>{tipo}</SelectItem>
+                              <SelectItem key={tipo.value} value={tipo.value}>{tipo.label}</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
@@ -516,7 +485,7 @@ export function DashboardAdmin({ onNavigate, onLogout, userEmail }: DashboardAdm
                   <SelectContent>
                     <SelectItem value="todos">Todos los tipos</SelectItem>
                     {tiposProceso.map((tipo) => (
-                      <SelectItem key={tipo} value={tipo}>{tipo}</SelectItem>
+                      <SelectItem key={tipo.value} value={tipo.value}>{tipo.label}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -527,9 +496,9 @@ export function DashboardAdmin({ onNavigate, onLogout, userEmail }: DashboardAdm
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="todos">Todos los estados</SelectItem>
-                    <SelectItem value="activo">ACTIVO</SelectItem>
-                    <SelectItem value="pendiente">PENDIENTE</SelectItem>
-                    <SelectItem value="cerrado">CERRADO</SelectItem>
+                    <SelectItem value="ACTIVO">ACTIVO</SelectItem>
+                    <SelectItem value="PENDIENTE">PENDIENTE</SelectItem>
+                    <SelectItem value="CERRADO">CERRADO</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -538,6 +507,18 @@ export function DashboardAdmin({ onNavigate, onLogout, userEmail }: DashboardAdm
 
           {/* Cases List */}
           <div className="space-y-4">
+            {error && (
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">
+                {error}
+              </div>
+            )}
+            {!error && filteredCasos.length === 0 && (
+              <Card>
+                <CardContent className="p-6 text-center text-gray-600">
+                  No hay casos para mostrar con los filtros actuales.
+                </CardContent>
+              </Card>
+            )}
             {filteredCasos.map((caso) => (
               <Card key={caso.id} className="hover:shadow-lg transition-shadow">
                 <CardContent className="p-6">

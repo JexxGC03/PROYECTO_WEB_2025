@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
@@ -23,18 +23,23 @@ import {
   CheckSquare
 } from 'lucide-react';
 import { Page } from '../App';
+import { ApiCase, apiListCases } from '../lib/api';
 
 interface DashboardClienteProps {
   onNavigate: (page: Page) => void;
   onLogout: () => void;
   userEmail: string;
+  accessToken: string;
 }
 
 interface Caso {
   id: string;
   numero: string;
+  demandante: string;
+  demandado: string;
   cliente: string;
   tipo: string;
+  numeroProceso: string;
   estado: 'ACTIVO' | 'PENDIENTE' | 'CERRADO';
   prioridad: 'alta' | 'media' | 'baja';
   fecha: string;
@@ -42,32 +47,39 @@ interface Caso {
   resumen: string;
 }
 
-export function DashboardCliente({ onNavigate, onLogout, userEmail }: DashboardClienteProps) {
-  // Solo mostrar casos del cliente logueado
-  const [casos] = useState<Caso[]>([
-    {
-      id: '5',
-      numero: 'CASO-2025-004',
-      cliente: userEmail,
-      tipo: 'Derecho de Seguros',
-      estado: 'ACTIVO',
-      prioridad: 'alta',
-      fecha: '2025-02-05',
-      descripcion: 'Reclamación de seguro médico - En proceso',
-      resumen: 'Su caso se encuentra en proceso de revisión. Hemos solicitado documentación adicional a la aseguradora. Próxima audiencia programada para el 15 de marzo.'
-    },
-    {
-      id: '6',
-      numero: 'CASO-2025-007',
-      cliente: userEmail,
-      tipo: 'Derecho Laboral',
-      estado: 'PENDIENTE',
-      prioridad: 'media',
-      fecha: '2025-02-10',
-      descripcion: 'Consulta sobre contrato laboral',
-      resumen: 'Estamos revisando los términos de su contrato laboral. Necesitamos que complete algunas tareas pendientes en la sección de documentos.'
-    }
-  ].filter(caso => caso.cliente === userEmail));
+const statusApiToUi: Record<ApiCase['status'], Caso['estado']> = {
+  OPEN: 'PENDIENTE',
+  IN_PROGRESS: 'ACTIVO',
+  RESOLVED: 'PENDIENTE',
+  CLOSED: 'CERRADO'
+};
+
+const priorityApiToUi: Record<ApiCase['priority'], Caso['prioridad']> = {
+  LOW: 'baja',
+  MEDIUM: 'media',
+  HIGH: 'alta',
+  URGENT: 'alta'
+};
+
+const mapApiCaseToUi = (apiCase: ApiCase): Caso => ({
+  id: apiCase._id,
+  numero: apiCase.caseNumber,
+  demandante: apiCase.plaintiff?.name ?? '',
+  demandado: apiCase.defendant?.name ?? '',
+  cliente: apiCase.client?.name || apiCase.client?.email || 'Sin cliente',
+  tipo: apiCase.caseType,
+  numeroProceso: apiCase.caseNumber,
+  estado: statusApiToUi[apiCase.status] ?? 'PENDIENTE',
+  prioridad: priorityApiToUi[apiCase.priority] ?? 'media',
+  fecha: apiCase.createdAt || new Date().toISOString(),
+  descripcion: apiCase.description || '',
+  resumen: apiCase.description || '',
+});
+
+export function DashboardCliente({ onNavigate, onLogout, userEmail, accessToken }: DashboardClienteProps) {
+  const [casos, setCasos] = useState<Caso[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [filterEstado, setFilterEstado] = useState<string>('todos');
@@ -76,6 +88,26 @@ export function DashboardCliente({ onNavigate, onLogout, userEmail }: DashboardC
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [isDocumentsDialogOpen, setIsDocumentsDialogOpen] = useState(false);
   const [isTasksDialogOpen, setIsTasksDialogOpen] = useState(false);
+
+  useEffect(() => {
+    const fetchCases = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        const res = await apiListCases(accessToken);
+        const mapped = res.data
+          .filter((c) => c.client?.email === userEmail || c.client?.name?.toLowerCase() === userEmail.toLowerCase())
+          .map(mapApiCaseToUi);
+        setCasos(mapped);
+      } catch (err) {
+        setError((err as Error).message || 'No se pudieron cargar tus casos');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchCases();
+  }, [accessToken, userEmail]);
 
   const estadoColors = {
     'ACTIVO': 'bg-green-500',
@@ -90,25 +122,33 @@ export function DashboardCliente({ onNavigate, onLogout, userEmail }: DashboardC
   };
 
   const tiposProceso = [
-    'Derecho Civil',
-    'Derecho de Seguros',
-    'Derecho Laboral',
-    'Derecho Médico',
-    'Derecho Administrativo',
-    'Derecho Penal Derivado de Pólizas'
+    { value: 'CIVIL', label: 'Derecho Civil' },
+    { value: 'PENAL', label: 'Derecho Penal' },
+    { value: 'LABORAL', label: 'Derecho Laboral' },
+    { value: 'FAMILIA', label: 'Derecho de Familia' },
+    { value: 'ADMINISTRATIVO', label: 'Derecho Administrativo' },
+    { value: 'OTRO', label: 'Otro' },
   ];
 
-  const filteredCasos = casos.filter(caso => {
+  const filteredCasos = useMemo(() => casos.filter(caso => {
     const matchesSearch = caso.numero.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          caso.tipo.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesEstado = filterEstado === 'todos' || caso.estado === filterEstado.toUpperCase();
+    const matchesEstado = filterEstado === 'todos' || caso.estado === filterEstado;
     const matchesTipo = filterTipo === 'todos' || caso.tipo === filterTipo;
     return matchesSearch && matchesEstado && matchesTipo;
-  });
+  }), [casos, searchTerm, filterEstado, filterTipo]);
 
   const casosActivos = casos.filter(c => c.estado === 'ACTIVO').length;
   const casosPendientes = casos.filter(c => c.estado === 'PENDIENTE').length;
   const casosAltaPrioridad = casos.filter(c => c.prioridad === 'alta' && c.estado !== 'CERRADO').length;
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <p className="text-gray-600">Cargando tus casos desde el servidor...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
@@ -232,7 +272,7 @@ export function DashboardCliente({ onNavigate, onLogout, userEmail }: DashboardC
                   <SelectContent>
                     <SelectItem value="todos">Todos los tipos</SelectItem>
                     {tiposProceso.map((tipo) => (
-                      <SelectItem key={tipo} value={tipo}>{tipo}</SelectItem>
+                      <SelectItem key={tipo.value} value={tipo.value}>{tipo.label}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -243,9 +283,9 @@ export function DashboardCliente({ onNavigate, onLogout, userEmail }: DashboardC
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="todos">Todos los estados</SelectItem>
-                    <SelectItem value="activo">ACTIVO</SelectItem>
-                    <SelectItem value="pendiente">PENDIENTE</SelectItem>
-                    <SelectItem value="cerrado">CERRADO</SelectItem>
+                    <SelectItem value="ACTIVO">ACTIVO</SelectItem>
+                    <SelectItem value="PENDIENTE">PENDIENTE</SelectItem>
+                    <SelectItem value="CERRADO">CERRADO</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -254,6 +294,18 @@ export function DashboardCliente({ onNavigate, onLogout, userEmail }: DashboardC
 
           {/* Cases List - Solo Resumen */}
           <div className="space-y-4">
+            {error && (
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">
+                {error}
+              </div>
+            )}
+            {!error && filteredCasos.length === 0 && (
+              <Card>
+                <CardContent className="p-6 text-center text-gray-600">
+                  No hay casos asociados a tu usuario todavía.
+                </CardContent>
+              </Card>
+            )}
             {filteredCasos.map((caso) => (
               <Card key={caso.id} className="hover:shadow-lg transition-shadow">
                 <CardContent className="p-6">
@@ -331,20 +383,6 @@ export function DashboardCliente({ onNavigate, onLogout, userEmail }: DashboardC
             ))}
           </div>
 
-          {filteredCasos.length === 0 && (
-            <Card>
-              <CardContent className="p-12 text-center">
-                <FileText className="h-16 w-16 mx-auto mb-4 text-gray-400" />
-                <h3 className="text-xl mb-2">No se encontraron casos</h3>
-                <p className="text-gray-600">
-                  {searchTerm || filterEstado !== 'todos' || filterTipo !== 'todos'
-                    ? 'Intente ajustar sus filtros de búsqueda'
-                    : 'No tiene casos registrados actualmente'}
-                </p>
-              </CardContent>
-            </Card>
-          )}
-
           {/* Información Importante */}
           <Card className="mt-8 bg-amber-50 border-amber-200">
             <CardContent className="p-6">
@@ -367,11 +405,11 @@ export function DashboardCliente({ onNavigate, onLogout, userEmail }: DashboardC
             caso={{
               id: selectedCaso.id,
               numero: selectedCaso.numero,
-              demandante: selectedCaso.cliente,
-              demandado: 'N/A',
+              demandante: selectedCaso.demandante,
+              demandado: selectedCaso.demandado,
               cliente: selectedCaso.cliente,
               tipo: selectedCaso.tipo,
-              numeroProceso: selectedCaso.numero,
+              numeroProceso: selectedCaso.numeroProceso,
               estado: selectedCaso.estado,
               prioridad: selectedCaso.prioridad,
               fecha: selectedCaso.fecha,

@@ -6,9 +6,10 @@ import { Card, CardContent } from '../components/ui/card';
 import { Scale, Mail, Lock, User, Phone, Building2, ArrowLeft, AlertCircle } from 'lucide-react';
 import { Page } from '../App';
 import { Alert, AlertDescription } from '../components/ui/alert';
+import { apiLogin, apiRegister } from '../lib/api';
 
 interface AuthProps {
-  onLogin: (userRole: 'admin' | 'client', userEmail: string) => void;
+  onLogin: (token: string, userRole: 'admin' | 'client', userEmail: string) => void;
   onNavigate: (page: Page) => void;
 }
 
@@ -22,12 +23,7 @@ export function Auth({ onLogin, onNavigate }: AuthProps) {
     company: '',
   });
   const [errors, setErrors] = useState<string[]>([]);
-
-  // Test users
-  const testUsers = [
-    { email: 'admin@raa.com', password: 'Raa12345*', role: 'admin' as const },
-    { email: 'client@email.com', password: 'MiContra5432%', role: 'client' as const },
-  ];
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const validatePassword = (password: string): string[] => {
     const errors: string[] = [];
@@ -51,32 +47,39 @@ export function Auth({ onLogin, onNavigate }: AuthProps) {
     return errors;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors([]);
+    setIsSubmitting(true);
 
     if (isLogin) {
-      // Login logic
-      const user = testUsers.find(
-        (u) => u.email === formData.email && u.password === formData.password
-      );
-
-      if (user) {
-        onLogin(user.role, user.email);
-      } else {
-        setErrors(['Email o contraseña incorrectos']);
+      try {
+        const res = await apiLogin(formData.email, formData.password);
+        const role = res.user.role === 'ADMIN' || res.user.role === 'AGENT' ? 'admin' : 'client';
+        onLogin(res.accessToken, role, res.user.email);
+      } catch (error) {
+        setErrors([(error as Error).message || 'No se pudo iniciar sesión']);
+      } finally {
+        setIsSubmitting(false);
       }
     } else {
-      // Register logic
       const passwordErrors = validatePassword(formData.password);
-      
+
       if (passwordErrors.length > 0) {
         setErrors(passwordErrors);
+        setIsSubmitting(false);
         return;
       }
 
-      // Simulate successful registration
-      onLogin('client', formData.email);
+      try {
+        await apiRegister(formData.name, formData.email, formData.password);
+        const loginRes = await apiLogin(formData.email, formData.password);
+        const role = loginRes.user.role === 'ADMIN' || loginRes.user.role === 'AGENT' ? 'admin' : 'client';
+        onLogin(loginRes.accessToken, role, loginRes.user.email);
+      } catch (error) {
+        setErrors([(error as Error).message || 'No se pudo registrar la cuenta']);
+        setIsSubmitting(false);
+      }
     }
   };
 
@@ -305,8 +308,9 @@ export function Auth({ onLogin, onNavigate }: AuthProps) {
                 <Button
                   type="submit"
                   className="w-full bg-[#6D0111] hover:bg-[#5A0010] text-white py-6"
+                  disabled={isSubmitting}
                 >
-                  {isLogin ? 'Iniciar Sesión' : 'Crear Cuenta'}
+                  {isSubmitting ? 'Procesando...' : isLogin ? 'Iniciar Sesión' : 'Crear Cuenta'}
                 </Button>
 
                 {/* Register-only terms */}
