@@ -18,7 +18,16 @@ export type ApiCase = {
   createdAt?: string;
 };
 
-const BASE_URL = import.meta.env.VITE_API_URL || '/api';
+const BASE_URL = (import.meta.env.VITE_API_URL || '/api').replace(/\/$/, '');
+
+function buildUrl(path: string) {
+  const withoutDuplicateApi = path.startsWith('/api') ? path.replace(/^\/api/, '') : path;
+  const normalizedPath = withoutDuplicateApi.startsWith('/')
+    ? withoutDuplicateApi
+    : `/${withoutDuplicateApi}`;
+
+  return `${BASE_URL}${normalizedPath}`;
+}
 
 async function request<T>(path: string, options: RequestInit = {}, token?: string): Promise<T> {
   const headers: Record<string, string> = {
@@ -28,7 +37,7 @@ async function request<T>(path: string, options: RequestInit = {}, token?: strin
 
   if (token) headers['Authorization'] = `Bearer ${token}`;
 
-  const res = await fetch(`${BASE_URL}${path}`, { ...options, headers });
+  const res = await fetch(buildUrl(path), { ...options, headers });
   if (!res.ok) {
     let message = 'Error de red';
     try {
@@ -45,25 +54,25 @@ async function request<T>(path: string, options: RequestInit = {}, token?: strin
 }
 
 export async function apiLogin(email: string, password: string) {
-  return request<{ accessToken: string; refreshToken: string; user: ApiUser }>('/api/auth/login', {
+  return request<{ accessToken: string; refreshToken: string; user: ApiUser }>('/auth/login', {
     method: 'POST',
     body: JSON.stringify({ email, password }),
   });
 }
 
 export async function apiRegister(fullName: string, email: string, password: string) {
-  return request<{ id: string; fullName: string; email: string }>('/api/auth/register', {
+  return request<{ id: string; fullName: string; email: string }>('/auth/register', {
     method: 'POST',
     body: JSON.stringify({ fullName, email, password }),
   });
 }
 
 export async function apiMe(token: string) {
-  return request<ApiUser>('/api/auth/me', { method: 'GET' }, token);
+  return request<ApiUser>('/auth/me', { method: 'GET' }, token);
 }
 
 export async function apiListCases(token: string) {
-  return request<{ data: ApiCase[] }>('/api/cases', { method: 'GET' }, token);
+  return request<{ data: ApiCase[] }>('/cases', { method: 'GET' }, token);
 }
 
 export async function apiCreateCase(payload: {
@@ -75,7 +84,7 @@ export async function apiCreateCase(payload: {
   priority: string;
   description?: string;
 }, token: string) {
-  return request<ApiCase>('/api/cases', {
+  return request<ApiCase>('/cases', {
     method: 'POST',
     body: JSON.stringify(payload),
   }, token);
@@ -91,7 +100,7 @@ export async function apiUpdateCase(id: string, payload: Partial<{
   status: string;
   description: string;
 }>, token: string) {
-  return request<ApiCase>(`/api/cases/${id}`, {
+  return request<ApiCase>(`/cases/${id}`, {
     method: 'PATCH',
     body: JSON.stringify(payload),
   }, token);
